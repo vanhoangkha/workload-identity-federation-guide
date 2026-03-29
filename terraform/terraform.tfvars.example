@@ -1,0 +1,19 @@
+project_id     = "my-gcp-project"
+project_number = "123456789012"
+aws_account_id = "111122223333"
+environment    = "production"
+
+service_accounts = {
+  "bigquery" = {
+    display_name = "AWS BigQuery SA"
+    roles        = ["roles/bigquery.dataViewer", "roles/bigquery.jobUser"]
+  }
+  "storage" = {
+    display_name = "AWS Storage SA"
+    roles        = ["roles/storage.objectViewer"]
+  }
+  "logging" = {
+    display_name = "AWS Logging SA"
+    roles        = ["roles/logging.logWriter"]
+  }
+}
