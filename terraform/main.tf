@@ -1,155 +1,108 @@
-terraform {
-  required_version = ">= 1.5"
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 5.0"
-    }
-  }
+locals {
+  pool_id     = "aws-${var.environment}"
+  provider_id = "aws-${var.aws_account_id}"
+
+  # Build attribute condition based on allowed roles
+  role_conditions = length(var.aws_allowed_roles) > 0 ? join(" || ", [
+    for role in var.aws_allowed_roles :
+    "assertion.arn.contains('assumed-role/${role}/')"
+  ]) : ""
+
+  attribute_condition = length(var.aws_allowed_roles) > 0 ? (
+    "assertion.arn.startsWith('arn:aws:sts::${var.aws_account_id}:assumed-role/') && (${local.role_conditions})"
+    ) : (
+    "assertion.arn.startsWith('arn:aws:sts::${var.aws_account_id}:assumed-role/')"
+  )
+
+  # Flatten SA -> role pairs for IAM bindings
+  sa_role_pairs = flatten([
+    for sa_key, sa in var.service_accounts : [
+      for role in sa.roles : {
+        key  = "${sa_key}--${replace(role, "roles/", "")}"
+        sa   = sa_key
+        role = role
+      }
+    ]
+  ])
 }
 
-variable "project_id" {
-  description = "GCP Project ID"
-  type        = string
-}
+# ─── Workload Identity Pool ───
 
-variable "project_number" {
-  description = "GCP Project Number"
-  type        = string
-}
-
-variable "aws_account_id" {
-  description = "AWS Account ID (12 digits)"
-  type        = string
-  validation {
-    condition     = can(regex("^[0-9]{12}$", var.aws_account_id))
-    error_message = "AWS Account ID must be exactly 12 digits."
-  }
-}
-
-variable "environment" {
-  description = "Environment name (production, staging, development)"
-  type        = string
-  default     = "production"
-}
-
-variable "pool_id" {
-  description = "Workload Identity Pool ID"
-  type        = string
-  default     = "aws-pool"
-}
-
-variable "provider_id" {
-  description = "Workload Identity Pool Provider ID"
-  type        = string
-  default     = "aws-provider"
-}
-
-variable "service_accounts" {
-  description = "Map of service accounts to create with their roles"
-  type = map(object({
-    display_name    = string
-    roles           = list(string)
-    aws_role_filter = optional(string, "")
-  }))
-  default = {
-    "bigquery" = {
-      display_name    = "AWS BigQuery SA"
-      roles           = ["roles/bigquery.dataViewer", "roles/bigquery.jobUser"]
-      aws_role_filter = ""
-    }
-  }
-}
-
-# Pool
-resource "google_iam_workload_identity_pool" "aws" {
-  workload_identity_pool_id = "${var.pool_id}-${var.environment}"
-  display_name              = "AWS Pool (${var.environment})"
-  description               = "Workload Identity Pool for AWS ${var.environment} workloads"
+resource "google_iam_workload_identity_pool" "this" {
   project                   = var.project_id
+  workload_identity_pool_id = local.pool_id
+  display_name              = "AWS ${title(var.environment)}"
+  description               = "WIF pool for AWS workloads (${var.environment})"
+  disabled                  = false
 }
 
-# Provider with attribute condition
-resource "google_iam_workload_identity_pool_provider" "aws" {
-  workload_identity_pool_id          = google_iam_workload_identity_pool.aws.workload_identity_pool_id
-  workload_identity_pool_provider_id = var.provider_id
+# ─── AWS Provider ───
+
+resource "google_iam_workload_identity_pool_provider" "this" {
   project                            = var.project_id
+  workload_identity_pool_id          = google_iam_workload_identity_pool.this.workload_identity_pool_id
+  workload_identity_pool_provider_id = local.provider_id
+
+  display_name = "AWS Account ${var.aws_account_id}"
 
   attribute_mapping = {
-    "google.subject"       = "assertion.arn"
-    "attribute.account"    = "assertion.account"
-    "attribute.aws_role"   = "assertion.arn.extract('assumed-role/{role}/')"
+    "google.subject"     = "assertion.arn"
+    "attribute.account"  = "assertion.account"
+    "attribute.aws_role" = "assertion.arn.extract('assumed-role/{role}/')"
   }
 
-  # Only allow assumed-role ARNs from the specified account
-  attribute_condition = "assertion.arn.startsWith('arn:aws:sts::${var.aws_account_id}:assumed-role/')"
+  attribute_condition = local.attribute_condition
 
   aws {
     account_id = var.aws_account_id
   }
 }
 
-# Service Accounts
-resource "google_service_account" "workload" {
+# ─── Service Accounts ───
+
+resource "google_service_account" "this" {
   for_each     = var.service_accounts
-  account_id   = "aws-${each.key}-sa"
-  display_name = each.value.display_name
-  description  = "SA for AWS workloads - ${each.key} (${var.environment})"
   project      = var.project_id
+  account_id   = "aws-${each.key}-${var.environment}"
+  display_name = "${each.value.display_name} (${var.environment})"
+  description  = each.value.description != "" ? each.value.description : "WIF SA for AWS ${each.key} workloads"
 }
 
-# IAM roles for each SA
+# ─── IAM: SA -> GCP Resource Roles ───
+
 resource "google_project_iam_member" "sa_roles" {
-  for_each = {
-    for pair in flatten([
-      for sa_key, sa in var.service_accounts : [
-        for role in sa.roles : {
-          key  = "${sa_key}-${replace(role, "/", "-")}"
-          sa   = sa_key
-          role = role
-        }
-      ]
-    ]) : pair.key => pair
-  }
-  project = var.project_id
-  role    = each.value.role
-  member  = "serviceAccount:${google_service_account.workload[each.value.sa].email}"
+  for_each = { for pair in local.sa_role_pairs : pair.key => pair }
+  project  = var.project_id
+  role     = each.value.role
+  member   = "serviceAccount:${google_service_account.this[each.value.sa].email}"
 }
 
-# Workload Identity User binding
-resource "google_service_account_iam_member" "wif_user" {
+# ─── IAM: AWS -> SA Impersonation ───
+
+resource "google_service_account_iam_member" "workload_identity_user" {
   for_each           = var.service_accounts
-  service_account_id = google_service_account.workload[each.key].name
+  service_account_id = google_service_account.this[each.key].name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.aws.name}/*"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.this.name}/*"
 }
 
 resource "google_service_account_iam_member" "token_creator" {
   for_each           = var.service_accounts
-  service_account_id = google_service_account.workload[each.key].name
+  service_account_id = google_service_account.this[each.key].name
   role               = "roles/iam.serviceAccountTokenCreator"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.aws.name}/*"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.this.name}/*"
 }
 
-# Outputs
-output "pool_id" {
-  value = google_iam_workload_identity_pool.aws.workload_identity_pool_id
-}
+# ─── Enable Required APIs ───
 
-output "provider_id" {
-  value = google_iam_workload_identity_pool_provider.aws.workload_identity_pool_provider_id
-}
-
-output "service_account_emails" {
-  value = { for k, v in google_service_account.workload : k => v.email }
-}
-
-output "credential_config_command" {
-  value = <<-EOT
-    gcloud iam workload-identity-pools create-cred-config \
-      ${google_iam_workload_identity_pool_provider.aws.name} \
-      --service-account=<SA_EMAIL> \
-      --aws --enable-imdsv2 \
-      --output-file=gcp-credentials.json
-  EOT
+resource "google_project_service" "apis" {
+  for_each = toset([
+    "iam.googleapis.com",
+    "sts.googleapis.com",
+    "iamcredentials.googleapis.com",
+    "cloudresourcemanager.googleapis.com",
+  ])
+  project            = var.project_id
+  service            = each.value
+  disable_on_destroy = false
 }

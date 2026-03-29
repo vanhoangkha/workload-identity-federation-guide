@@ -1,19 +1,38 @@
 project_id     = "my-gcp-project"
-project_number = "123456789012"
 aws_account_id = "111122223333"
 environment    = "production"
 
+# Optional: restrict to specific AWS roles (empty = all roles)
+aws_allowed_roles = ["production-app-role", "data-pipeline-role"]
+
 service_accounts = {
   "bigquery" = {
-    display_name = "AWS BigQuery SA"
-    roles        = ["roles/bigquery.dataViewer", "roles/bigquery.jobUser"]
+    display_name = "BigQuery Analytics"
+    description  = "Read-only access to BigQuery datasets"
+    roles = [
+      "roles/bigquery.dataViewer",
+      "roles/bigquery.jobUser",
+    ]
   }
   "storage" = {
-    display_name = "AWS Storage SA"
-    roles        = ["roles/storage.objectViewer"]
+    display_name = "Cloud Storage Sync"
+    description  = "Read/write access to Cloud Storage"
+    roles = [
+      "roles/storage.objectAdmin",
+    ]
   }
   "logging" = {
-    display_name = "AWS Logging SA"
-    roles        = ["roles/logging.logWriter"]
+    display_name = "Cloud Logging Writer"
+    description  = "Write logs to Cloud Logging"
+    roles = [
+      "roles/logging.logWriter",
+    ]
+  }
+  "terraform" = {
+    display_name = "Terraform IaC"
+    description  = "Manage GCP infrastructure from AWS CI/CD"
+    roles = [
+      "roles/editor",
+    ]
   }
 }
