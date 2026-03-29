@@ -1,4 +1,21 @@
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![AWS](https://img.shields.io/badge/AWS-Verified-orange)
+![GCP](https://img.shields.io/badge/GCP-Verified-green)
+![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5-purple)
+
 # AWS to Google Cloud: Workload Identity Federation Guide
+
+## Contents
+
+- [Overview](#why-workload-identity-federation)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+- [Verified Test Results](#verified-test-results)
+- [Examples](#examples)
+- [Terraform Module](#terraform-module)
+- [Enterprise Best Practices](#enterprise-best-practices)
+- [Troubleshooting](#troubleshooting)
+- [References](#references)
 
 A comprehensive, step-by-step guide to configure **Google Cloud Workload Identity Federation** for AWS workloads — enabling secure, keyless authentication from AWS to Google Cloud services.
 
