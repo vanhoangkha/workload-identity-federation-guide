@@ -318,3 +318,46 @@ terraform init && terraform apply
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## Verified Test Results
+
+The following end-to-end test was performed on 2026-03-29, authenticating from an AWS EC2 instance to Google Cloud BigQuery via Workload Identity Federation.
+
+### Test Environment
+
+| Component | Detail |
+|-----------|--------|
+| AWS Identity | EC2 Instance Role (via Instance Metadata Service v2) |
+| GCP Project | Lab environment |
+| WIF Pool | aws-pool |
+| WIF Provider | aws-provider |
+| GCP Service Account | aws-bigquery-sa |
+| Target Service | BigQuery |
+
+### Test Output
+
+```
+$ python3 bigquery_example.py
+
+Connected to BigQuery via AWS Workload Identity Federation!
+Test query (Shakespeare word count): 164656
+
+AWS EC2 -> GCP BigQuery: SUCCESS!
+```
+
+### Authentication Flow Verified
+
+```
+AWS EC2 Instance Metadata (IAM Role credentials)
+    |
+    v  Token Exchange (SigV4 -> Federated Token)
+Google STS
+    |
+    v  Impersonate
+GCP Service Account (access token)
+    |
+    v  Query
+BigQuery (164656 rows counted)
+```
