@@ -1,0 +1,18 @@
+project_id     = "my-gcp-project"
+project_number = "123456789012"
+hub_account_id = "999888777666"
+
+workloads = {
+  "invoice-service" = {
+    hub_role_name       = "111111111111-prod-invoice-service"
+    gcp_sa_id           = "invoice-wif-sa"
+    gcp_sa_display_name = "Invoice Service (EKS via WIF)"
+    gcp_roles           = ["roles/bigquery.dataViewer", "roles/bigquery.jobUser"]
+  }
+  "gcs-reader" = {
+    hub_role_name       = "111111111111-prod-gcs-reader"
+    gcp_sa_id           = "gcs-reader-wif-sa"
+    gcp_sa_display_name = "GCS Reader Service (EKS via WIF)"
+    gcp_roles           = ["roles/storage.objectAdmin"]
+  }
+}
