@@ -79,13 +79,13 @@ For each workload that needs GCP access, create a role in the hub account:
 ```bash
 # Hub role naming convention: {spoke-account-id}-{environment}-{service-name}
 aws iam create-role \
-  --role-name "111111111111-prod-invoice-service" \
+  --role-name "111111111111-prod-analytics-api" \
   --assume-role-policy-document '{
     "Version": "2012-10-17",
     "Statement": [{
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::111111111111:role/eks-prod-invoice-service"
+        "AWS": "arn:aws:iam::111111111111:role/eks-prod-analytics-api"
       },
       "Action": "sts:AssumeRole"
     }]
@@ -109,10 +109,10 @@ gcloud iam workload-identity-pools providers create-aws hub-provider \
 ### Step 4: Bind GCP Service Account
 
 ```bash
-PRINCIPAL="principalSet://iam.googleapis.com/projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/aws-production/attribute.aws_role/arn:aws:sts::<HUB_ACCOUNT>:assumed-role/111111111111-prod-invoice-service"
+PRINCIPAL="principalSet://iam.googleapis.com/projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/aws-production/attribute.aws_role/arn:aws:sts::<HUB_ACCOUNT>:assumed-role/111111111111-prod-analytics-api"
 
 gcloud iam service-accounts add-iam-policy-binding \
-  invoice-sa@<PROJECT_ID>.iam.gserviceaccount.com \
+  analytics-sa@<PROJECT_ID>.iam.gserviceaccount.com \
   --role=roles/iam.workloadIdentityUser \
   --member="$PRINCIPAL"
 ```
@@ -135,7 +135,7 @@ from google.auth.transport.requests import Request
 # Step 1-2: Assume hub role (IRSA creds used automatically by boto3)
 sts = boto3.client("sts")
 hub_creds = sts.assume_role(
-    RoleArn="arn:aws:iam::<HUB_ACCOUNT>:role/111111111111-prod-invoice-service",
+    RoleArn="arn:aws:iam::<HUB_ACCOUNT>:role/111111111111-prod-analytics-api",
     RoleSessionName="wif-session",
 )["Credentials"]
 
@@ -149,7 +149,7 @@ gcp_creds = google_aws.Credentials.from_info({
     "type": "external_account",
     "audience": "//iam.googleapis.com/projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/aws-production/providers/hub-provider",
     "subject_token_type": "urn:ietf:params:aws:token-type:aws4_request",
-    "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/invoice-sa@<PROJECT_ID>.iam.gserviceaccount.com:generateAccessToken",
+    "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/analytics-sa@<PROJECT_ID>.iam.gserviceaccount.com:generateAccessToken",
     "token_url": "https://sts.googleapis.com/v1/token",
     "credential_source": {
         "environment_id": "aws1",
