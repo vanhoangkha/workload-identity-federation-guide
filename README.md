@@ -14,6 +14,7 @@
 - [Examples](#examples)
 - [Terraform Module](#terraform-module)
 - [Enterprise Best Practices](#enterprise-best-practices)
+- [Advanced Patterns](#advanced-patterns)
 - [Troubleshooting](#troubleshooting)
 - [References](#references)
 
@@ -309,6 +310,44 @@ terraform init && terraform apply
 ```
 
 ---
+
+## Advanced Patterns
+
+### Hub-and-Spoke (Enterprise Multi-Account)
+
+For organizations with many AWS accounts, the **Hub-and-Spoke** pattern routes all WIF traffic through a single dedicated AWS account — reducing provider sprawl and centralizing audit.
+
+```
+Spoke Account A ──┐
+Spoke Account B ──┼──→ Hub Account ──→ GCP WIF Pool (1 provider)
+Spoke Account C ──┘
+```
+
+**Benefits:**
+- Single WIF provider regardless of how many AWS accounts you have
+- Hub account contains only IAM roles — no workloads, minimal blast radius
+- Adding new workloads requires no changes to GCP WIF configuration
+- Centralized CloudTrail audit for all cross-cloud access
+
+📖 **Full guide:** [`docs/hub-and-spoke-pattern.md`](docs/hub-and-spoke-pattern.md)  
+🏗️ **Terraform module:** [`terraform/hub-and-spoke/`](terraform/hub-and-spoke/)
+
+### EKS IRSA to GCP
+
+For Kubernetes workloads on EKS, IRSA (IAM Roles for Service Accounts) provides pod-level identity without node-level credentials:
+
+```
+EKS Pod (IRSA) → Assume Hub Role → GCP WIF → GCP Resources
+```
+
+**Key advantages:**
+- Pod-level granularity (not node-level)
+- No keys stored anywhere — IRSA uses projected service account tokens
+- Compatible with IMDSv2 enforcement (IRSA bypasses IMDS entirely)
+- Auto-refresh built into google-auth library
+
+📖 **Full guide:** [`docs/eks-irsa-to-gcp.md`](docs/eks-irsa-to-gcp.md)  
+🐳 **Demo app:** [`examples/fastapi-gcs-service/`](examples/fastapi-gcs-service/) — FastAPI service accessing GCS from EKS
 
 ## Troubleshooting
 

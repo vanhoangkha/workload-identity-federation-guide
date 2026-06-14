@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gcs-wif-service
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::<SPOKE_ACCOUNT>:role/eks-prod-gcs-wif-service"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gcs-wif-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gcs-wif-service
+  template:
+    metadata:
+      labels:
+        app: gcs-wif-service
+    spec:
+      serviceAccountName: gcs-wif-service
+      containers:
+        - name: app
+          image: gcs-wif-service:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: HUB_ROLE_ARN
+              value: "arn:aws:iam::<HUB_ACCOUNT>:role/<SPOKE_ACCOUNT>-prod-gcs-wif-service"
+            - name: WIF_AUDIENCE
+              value: "//iam.googleapis.com/projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/aws-production/providers/hub-provider"
+            - name: GCP_SA_EMAIL
+              value: "gcs-wif-sa@<GCP_PROJECT>.iam.gserviceaccount.com"
+            - name: GCP_PROJECT_ID
+              value: "<GCP_PROJECT>"
+            - name: GCS_BUCKET
+              value: "<BUCKET_NAME>"
+            - name: AWS_REGION
+              value: "us-east-1"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gcs-wif-service
+spec:
+  selector:
+    app: gcs-wif-service
+  ports:
+    - port: 80
+      targetPort: 8080
