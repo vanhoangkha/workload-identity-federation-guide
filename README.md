@@ -330,8 +330,8 @@ Spoke Account C ──┘
 - Adding new workloads requires no changes to GCP WIF configuration
 - Centralized CloudTrail audit for all cross-cloud access
 
-📖 **Full guide:** [`docs/hub-and-spoke-pattern.md`](docs/hub-and-spoke-pattern.md)  
-🏗️ **Terraform module:** [`terraform/hub-and-spoke/`](terraform/hub-and-spoke/)
+**Full guide:** [`docs/hub-and-spoke-pattern.md`](docs/hub-and-spoke-pattern.md)
+**Terraform module:** [`terraform/hub-and-spoke/`](terraform/hub-and-spoke/)
 
 ### EKS IRSA to GCP
 
@@ -347,8 +347,8 @@ EKS Pod (IRSA) → Assume Hub Role → GCP WIF → GCP Resources
 - Compatible with IMDSv2 enforcement (IRSA bypasses IMDS entirely)
 - Auto-refresh built into google-auth library
 
-📖 **Full guide:** [`docs/eks-irsa-to-gcp.md`](docs/eks-irsa-to-gcp.md)  
-🐳 **Demo app:** [`examples/fastapi-gcs-service/`](examples/fastapi-gcs-service/) — FastAPI service accessing GCS from EKS
+**Full guide:** [`docs/eks-irsa-to-gcp.md`](docs/eks-irsa-to-gcp.md)
+**Demo app:** [`examples/fastapi-gcs-service/`](examples/fastapi-gcs-service/) — FastAPI service accessing GCS from EKS
 
 ## Enterprise Security Hardening
 
@@ -366,7 +366,7 @@ Based on [GCP Official Best Practices](https://cloud.google.com/iam/docs/best-pr
 | IAM Deny Policies | Prevent accidental deletion of WIF resources |
 | Credential validation | Verify `token_url` and `audience` before deployment |
 
-📖 **Full guide:** [`docs/enterprise-security-hardening.md`](docs/enterprise-security-hardening.md)
+**Full guide:** [`docs/enterprise-security-hardening.md`](docs/enterprise-security-hardening.md)
 
 ## Troubleshooting
 
