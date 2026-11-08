@@ -8,8 +8,8 @@ Environment variables required:
   GCP_PROJECT_ID - GCP project ID
   AWS_REGION     - AWS region (default: us-east-1)
 """
-import os
 import logging
+import os
 
 import boto3
 from google.auth import aws as google_aws

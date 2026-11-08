@@ -6,7 +6,7 @@ In multi-account AWS environments, managing WIF providers per spoke account crea
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                    AWS Spoke Accounts                            │
 │                                                                 │
@@ -67,6 +67,7 @@ In multi-account AWS environments, managing WIF providers per spoke account crea
 ### Step 1: Create Dedicated Hub Account
 
 The hub account should:
+
 - **Only** contain IAM roles for WIF — no workloads, no compute
 - Have MFA enforcement and strict SCPs
 - Enable CloudTrail for all AssumeRole events
@@ -172,7 +173,7 @@ gcp_creds.refresh(Request())
 
 ### Separate Pools per Environment
 
-```
+```text
 Organization
   +-- Pool: aws-production
   |     +-- Provider: hub-provider (hub account ID)

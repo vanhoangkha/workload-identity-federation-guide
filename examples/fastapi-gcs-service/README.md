@@ -4,7 +4,7 @@ A production-ready FastAPI service that accesses Google Cloud Storage from EKS u
 
 ## Architecture
 
-```
+```text
 EKS Pod (IRSA) → Assume Hub Role → GCP WIF → GCS
 ```
 

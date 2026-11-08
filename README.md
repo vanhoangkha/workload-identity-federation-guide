@@ -9,7 +9,7 @@
 
 - [Overview](#why-workload-identity-federation)
 - [Architecture](#architecture)
-- [Quick Start](#quick-start)
+- [Step-by-Step Setup](#step-by-step-setup)
 - [Verified Test Results](#verified-test-results)
 - [Examples](#examples)
 - [Terraform Module](#terraform-module)
@@ -165,6 +165,7 @@ gcloud iam service-accounts add-iam-policy-binding \
 ```
 
 Important notes:
+
 - Use **PROJECT_NUMBER** (numeric), not Project ID
 - The **FULL_AWS_ARN** must match exactly, including the instance/resource ID
 - Wait 30-60 seconds for IAM policy propagation
@@ -218,7 +219,7 @@ for row in client.query(query).result():
 
 Actual output from AWS EC2:
 
-```
+```text
 Top 5 Shakespeare works by word count:
   hamlet: 5318
   kinghenryv: 5104
@@ -261,7 +262,7 @@ logger.log_struct({
 
 Actual output from AWS EC2:
 
-```
+```text
 Log sent to GCP Cloud Logging successfully!
   Logger: aws-wif-test
   Hostname: ip-172-31-xx-xxx
@@ -318,13 +319,14 @@ terraform init && terraform apply
 
 For organizations with many AWS accounts, the **Hub-and-Spoke** pattern routes all WIF traffic through a single dedicated AWS account — reducing provider sprawl and centralizing audit.
 
-```
+```text
 Spoke Account A ──┐
 Spoke Account B ──┼──→ Hub Account ──→ GCP WIF Pool (1 provider)
 Spoke Account C ──┘
 ```
 
 **Benefits:**
+
 - Single WIF provider regardless of how many AWS accounts you have
 - Hub account contains only IAM roles — no workloads, minimal blast radius
 - Adding new workloads requires no changes to GCP WIF configuration
@@ -337,11 +339,12 @@ Spoke Account C ──┘
 
 For Kubernetes workloads on EKS, IRSA (IAM Roles for Service Accounts) provides pod-level identity without node-level credentials:
 
-```
+```text
 EKS Pod (IRSA) → Assume Hub Role → GCP WIF → GCP Resources
 ```
 
 **Key advantages:**
+
 - Pod-level granularity (not node-level)
 - No keys stored anywhere — IRSA uses projected service account tokens
 - Compatible with IMDSv2 enforcement (IRSA bypasses IMDS entirely)
@@ -413,7 +416,7 @@ The following end-to-end test was performed on 2026-03-29, authenticating from a
 
 ### Test Output
 
-```
+```console
 $ python3 bigquery_example.py
 
 Connected to BigQuery via AWS Workload Identity Federation!
@@ -424,7 +427,7 @@ AWS EC2 -> GCP BigQuery: SUCCESS!
 
 ### Authentication Flow Verified
 
-```
+```text
 AWS EC2 Instance Metadata (IAM Role credentials)
     |
     v  Token Exchange (SigV4 -> Federated Token)
@@ -439,8 +442,6 @@ BigQuery (164656 rows counted)
 
 ---
 
-
-
 ---
 
 ## Enterprise Best Practices
@@ -449,7 +450,7 @@ BigQuery (164656 rows counted)
 
 Separate pools by environment to prevent cross-environment access:
 
-```
+```text
 Organization
   +-- Pool: aws-production     (or azure-production)
   |     +-- Provider: account-111111111111
@@ -461,6 +462,7 @@ Organization
 ```
 
 Rules:
+
 - One pool per environment per cloud provider
 - One provider per AWS account or Azure tenant
 - Never share pools across environments
@@ -471,6 +473,7 @@ Rules:
 Always restrict which identities can authenticate. Never leave attribute conditions empty in production.
 
 **AWS:**
+
 ```bash
 # Only allow assumed-role ARNs (block IAM users, root)
 --attribute-condition="assertion.arn.startsWith('arn:aws:sts::<ACCOUNT_ID>:assumed-role/')"
@@ -483,6 +486,7 @@ Always restrict which identities can authenticate. Never leave attribute conditi
 ```
 
 **Azure:**
+
 ```bash
 # Only allow specific managed identities
 --attribute-condition="assertion.sub == '<OBJECT_ID>'"
@@ -500,6 +504,7 @@ Always restrict which identities can authenticate. Never leave attribute conditi
 | One SA per environment | Development only | Highest |
 
 Rules:
+
 - Grant roles at resource level, not project level
 - Use custom roles when predefined roles are too broad
 - Never use `roles/editor` or `roles/owner` in production
@@ -530,6 +535,7 @@ The credential config file contains no secrets, but manage it properly:
 | Terraform | Environment variable |
 
 Rules:
+
 - Safe to commit to git (no secrets inside)
 - Use separate credential configs per SA (one per use case)
 - Set `GOOGLE_APPLICATION_CREDENTIALS` env var, never hardcode paths
@@ -582,6 +588,7 @@ gcloud logging read '
 ```
 
 Set up alerts:
+
 - Alert on token exchange failures (potential unauthorized access attempts)
 - Alert on new principal accessing a SA for the first time
 - Alert on access from unexpected AWS accounts or Azure tenants
@@ -599,7 +606,8 @@ gcloud access-context-manager perimeters create wif-perimeter \
 ```
 
 Use regional STS endpoints for data residency compliance:
-```
+
+```text
 https://sts.us-central1.rep.googleapis.com/v1/token
 https://sts.europe-west1.rep.googleapis.com/v1/token
 https://sts.asia-southeast1.rep.googleapis.com/v1/token
@@ -649,8 +657,6 @@ For organizations using both AWS and Azure with GCP:
 | IaC | Separate Terraform modules per cloud, shared variables |
 | Rotation | No rotation needed (keyless), but review access quarterly |
 
-
-
 ---
 
 ## Terraform Module
@@ -673,14 +679,3 @@ terraform apply
 | [examples/bigquery_query.py](examples/bigquery_query.py) | Query BigQuery |
 | [examples/gcs_sync.py](examples/gcs_sync.py) | Sync files to Cloud Storage |
 | [examples/cloud_logging.py](examples/cloud_logging.py) | Send logs to Cloud Logging |
-
-## References
-
-- [GCP: Workload Identity Federation](https://cloud.google.com/iam/docs/workload-identity-federation-with-other-clouds)
-- [GCP: WIF Best Practices](https://cloud.google.com/iam/docs/best-practices-for-using-workload-identity-federation)
-- [Terraform: Google Cloud Provider](https://registry.terraform.io/providers/hashicorp/google/latest/docs)
-
-## License
-
-MIT License - see [LICENSE](LICENSE)
-
