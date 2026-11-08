@@ -2,14 +2,15 @@
 FastAPI service demonstrating EKS IRSA → Hub Role → GCP WIF → GCS access.
 Designed to run on EKS with IRSA-enabled ServiceAccount.
 """
-import os
 import logging
+import os
 from contextlib import asynccontextmanager
+from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
+from google.api_core.exceptions import Forbidden, NotFound
 from google.cloud import storage
-from google.api_core.exceptions import NotFound, Forbidden
 
 from .auth import get_gcs_client
 
@@ -67,7 +68,7 @@ def download_object(path: str):
 
 
 @app.put("/objects/{path:path}")
-async def upload_object(path: str, file: UploadFile = File(...)):
+async def upload_object(path: str, file: Annotated[UploadFile, File()]):
     """Upload a file to GCS."""
     blob = _bucket().blob(path)
     try:

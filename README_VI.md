@@ -1,6 +1,5 @@
 # HƯỚNG DẪN TRIỂN KHAI WORKLOAD IDENTITY FEDERATION GIỮA AWS VÀ GOOGLE CLOUD
 
-
 ## 1. Giới thiệu tổng quan
 
 ### 1.1 Bối cảnh
@@ -218,6 +217,7 @@ gcloud iam service-accounts add-iam-policy-binding \
 ```
 
 Lưu ý quan trọng:
+
 - PROJECT_NUMBER phải là dạng số, không phải Project ID dạng chuỗi
 - FULL_AWS_ARN phải khớp chính xác với ARN của workload
 - Cần cấp đồng thời cả hai role
@@ -315,7 +315,7 @@ for row in client.query(query).result():
 
 Kết quả thực tế đã kiểm thử:
 
-```
+```text
 === USE CASE 1: BigQuery ===
 
 Datasets trong project:
@@ -371,7 +371,7 @@ sync_directory("/var/log/app", "logs/ec2-web-01")
 
 Kết quả thực tế đã kiểm thử:
 
-```
+```text
 === USE CASE 2: Cloud Storage ===
 
 Buckets trong project:
@@ -483,7 +483,7 @@ logger.log_struct({
 
 Kết quả thực tế đã kiểm thử:
 
-```
+```text
 === USE CASE 5: Cloud Logging ===
 
 Đã gửi log thành công tới GCP Cloud Logging!
@@ -521,6 +521,7 @@ def lambda_handler(event, context):
 ```
 
 Lưu ý đối với Lambda:
+
 - Đóng gói google-cloud-bigquery vào Lambda Layer hoặc deployment package
 - Lambda Execution Role tự động có AWS STS token, không cần cấu hình thêm phía AWS
 
@@ -640,22 +641,22 @@ Lưu ý: 3 diagram kiến trúc đã được tạo sẵn tại thư mục image
 ## 10. Tài liệu tham khảo
 
 1. Google Cloud - Workload Identity Federation with other clouds
-   https://cloud.google.com/iam/docs/workload-identity-federation-with-other-clouds
+   <https://cloud.google.com/iam/docs/workload-identity-federation-with-other-clouds>
 
 2. Google Cloud - Workload Identity Federation with Kubernetes
-   https://cloud.google.com/iam/docs/workload-identity-federation-with-kubernetes
+   <https://cloud.google.com/iam/docs/workload-identity-federation-with-kubernetes>
 
 3. Google Cloud - Best practices for Workload Identity Federation
-   https://cloud.google.com/iam/docs/best-practices-for-using-workload-identity-federation
+   <https://cloud.google.com/iam/docs/best-practices-for-using-workload-identity-federation>
 
 4. Google Cloud - Pricing Calculator
-   https://cloud.google.com/products/calculator
+   <https://cloud.google.com/products/calculator>
 
 5. AWS - EC2 Instance Metadata Service
-   https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html
+   <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html>
 
 6. AWS - IAM Roles for Amazon EC2
-   https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html
+   <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html>
 
 7. Terraform - Google Cloud Provider
-   https://registry.terraform.io/providers/hashicorp/google/latest/docs
+   <https://registry.terraform.io/providers/hashicorp/google/latest/docs>

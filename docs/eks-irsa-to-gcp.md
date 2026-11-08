@@ -3,6 +3,7 @@
 ## Overview
 
 This guide covers authenticating from **Amazon EKS pods** to **Google Cloud** using:
+
 - **IRSA (IAM Roles for Service Accounts)** for pod-level AWS identity
 - **Workload Identity Federation** for keyless GCP access
 
@@ -10,7 +11,7 @@ This is the most secure pattern for Kubernetes workloads — no keys stored anyw
 
 ## Authentication Flow
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │  EKS Cluster                                                │
 │  ┌───────────────────────────────────────────────────────┐  │

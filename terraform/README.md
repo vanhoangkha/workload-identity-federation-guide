@@ -21,6 +21,7 @@ terraform apply
 ```
 
 After apply, generate credential config:
+
 ```bash
 # The command is in terraform output
 terraform output -json credential_config_commands
